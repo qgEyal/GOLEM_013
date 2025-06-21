@@ -79,7 +79,9 @@ func clear_trails() -> void:
 	# gets called from main.gd --> reset
 	trails.clear()
 
-
+func _on_trail_dropped(pos: Vector2i, color: Color, duration: float, fade: float) -> void:
+	# Delegate straight to the existing helper
+	add_trail(pos, color, duration, fade)
 
 
 func _draw():

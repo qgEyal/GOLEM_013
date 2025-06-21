@@ -33,7 +33,7 @@ var terrain_textures: Dictionary[int, Vector2i] = {}
 # Dictionary to store active trails (format: {grid_position: {time_remaining, color}})
 #var active_trails: Dictionary = {}
 ##var active_trails: Dictionary[Vector2i, Dictionary[String, Variant]] = {}
-var active_trails: Dictionary[Vector2i, Variant] = {}
+#var active_trails: Dictionary[Vector2i, Variant] = {}
 
 
 # Enum defining various terrain types
@@ -109,16 +109,16 @@ func initialize_terrain_textures():
 # Method responsible for generating the map's terrain using procedural noise
 func generate_terrain() -> void:
 
-	var noise_map = []
-	var structured_map = []
-	var energetic_map = []
-	var prime_map = []
-
-	for i in range(width):
-		noise_map.append([])
-		structured_map.append([])
-		energetic_map.append([])
-		prime_map.append([])
+	#var noise_map = []
+	#var structured_map = []
+	#var energetic_map = []
+	#var prime_map = []
+#
+	#for i in range(width):
+		#noise_map.append([])
+		#structured_map.append([])
+		#energetic_map.append([])
+		#prime_map.append([])
 
 	# Create a random seed to ensure different maps on each run
 	var rnd_seed = randf_range(0, 10000)
@@ -161,21 +161,36 @@ func generate_terrain() -> void:
 	var prime_noise_max = 0.0
 
 	# Generate noise values for each tile in the map
+	#for x in range(width):
+		#for y in range(height):
+			#noise_map[x].append(abs(noise.get_noise_2d(x, y)))
+			#structured_map[x].append(abs(energetic_noise.get_noise_2d(x, y)))
+			#energetic_map[x].append(abs(structured_noise.get_noise_2d(x, y)))
+			#prime_map[x].append(abs(prime_noise.get_noise_2d(x, y)))
+#
+			#if noise_map[x][y] > noise_max:
+				#noise_max = noise_map[x][y]
+			#if structured_map[x][y] > energetic_noise_max:
+				#energetic_noise_max = structured_map[x][y]
+			#if energetic_map[x][y] > structured_noise_max:
+				#structured_noise_max = energetic_map[x][y]
+			#if prime_map[x][y] > prime_noise_max:
+				#prime_noise_max = prime_map[x][y]
+
+
+	# ── 1st pass: measure maxima without storing full maps ──
 	for x in range(width):
 		for y in range(height):
-			noise_map[x].append(abs(noise.get_noise_2d(x, y)))
-			structured_map[x].append(abs(energetic_noise.get_noise_2d(x, y)))
-			energetic_map[x].append(abs(structured_noise.get_noise_2d(x, y)))
-			prime_map[x].append(abs(prime_noise.get_noise_2d(x, y)))
+			var n_val  : float = abs(noise.get_noise_2d(x, y))
+			var s_val  : float = abs(structured_noise.get_noise_2d(x, y))
+			var e_val  : float = abs(energetic_noise.get_noise_2d(x, y))
+			var p_val  : float = abs(prime_noise.get_noise_2d(x, y))
 
-			if noise_map[x][y] > noise_max:
-				noise_max = noise_map[x][y]
-			if structured_map[x][y] > energetic_noise_max:
-				energetic_noise_max = structured_map[x][y]
-			if energetic_map[x][y] > structured_noise_max:
-				structured_noise_max = energetic_map[x][y]
-			if prime_map[x][y] > prime_noise_max:
-				prime_noise_max = prime_map[x][y]
+			noise_max           = maxf(noise_max, n_val)
+			structured_noise_max = maxf(structured_noise_max, s_val)
+			energetic_noise_max  = maxf(energetic_noise_max, e_val)
+			prime_noise_max      = maxf(prime_noise_max, p_val)
+
 
 	# Define noise value ranges that map to different terrain types
 	var terrain_gen_values = [
@@ -190,33 +205,67 @@ func generate_terrain() -> void:
 	var prime_gen_values = Vector2(prime_noise_max / 10 * 5.5, prime_noise_max + 0.05)
 
 	# Loop through each tile to assign terrain types and render them
+	#for x in range(width):
+		#for y in range(height):
+			#var tile = Tile.new(Vector2i(x, y), TerrainType.STABLE)  # Provide a default terrain type or set dynamically
+#
+			#var noise_value = noise_map[x][y]
+#
+			## Determine the terrain type based on the noise value
+			#for terrain in terrain_gen_values:
+				#if noise_value >= terrain["min"] and noise_value < terrain["max"]:
+					#tile.terrain_type = terrain["type"]
+					#break
+#
+			## Store the tile in the map_data dictionary
+			#map_data[Vector2i(x, y)] = tile
+#
+			## Secondary terrain checks (overlaying on plains)
+			#if energetic_map[x][y] >= structured_gen_values.x and energetic_map[x][y] <= structured_gen_values.y and tile.terrain_type == TerrainType.STABLE:
+				#tile.terrain_type = TerrainType.STRUCTURED
+#
+			#if structured_map[x][y] >= energetic_gen_values.x and structured_map[x][y] <= energetic_gen_values.y and tile.terrain_type == TerrainType.STABLE:
+				#tile.terrain_type = TerrainType.ENERGETIC
+#
+			#if prime_map[x][y] >= prime_gen_values.x and prime_map[x][y] <= prime_gen_values.y and tile.terrain_type == TerrainType.STABLE:
+				#tile.terrain_type = TerrainType.PRIME
+#
+			## Set the tile in the base layer using the corresponding terrain texture
+			#base_layer.set_cell(Vector2i(x, y), 0, terrain_textures[tile.terrain_type])
+	# ── 2nd pass: classify directly ──
 	for x in range(width):
 		for y in range(height):
-			var tile = Tile.new(Vector2i(x, y), TerrainType.STABLE)  # Provide a default terrain type or set dynamically
+			var tile_pos  : Vector2i = Vector2i(x, y)
+			var base_val  : float    = abs(noise.get_noise_2d(x, y))          # regenerate
+			var struct_val: float    = abs(structured_noise.get_noise_2d(x, y))
+			var energ_val : float    = abs(energetic_noise.get_noise_2d(x, y))
+			var prime_val : float    = abs(prime_noise.get_noise_2d(x, y))
 
-			var noise_value = noise_map[x][y]
+			var t_type : int = TerrainType.STABLE
 
-			# Determine the terrain type based on the noise value
-			for terrain in terrain_gen_values:
-				if noise_value >= terrain["min"] and noise_value < terrain["max"]:
-					tile.terrain_type = terrain["type"]
+			# Base-layer classification
+			for t in terrain_gen_values:
+				if base_val >= t["min"] and base_val < t["max"]:
+					t_type = t["type"]
 					break
 
-			# Store the tile in the map_data dictionary
-			map_data[Vector2i(x, y)] = tile
+			# Secondary overlays (order: PRIME > ENERGETIC > STRUCTURED)
+			if prime_val   >= prime_gen_values.x and prime_val   <= prime_gen_values.y:
+				t_type = TerrainType.PRIME
+			elif energ_val >= energetic_gen_values.x and energ_val <= energetic_gen_values.y:
+				t_type = TerrainType.ENERGETIC
+			elif struct_val >= structured_gen_values.x and struct_val <= structured_gen_values.y:
+				t_type = TerrainType.STRUCTURED
 
-			# Secondary terrain checks (overlaying on plains)
-			if energetic_map[x][y] >= structured_gen_values.x and energetic_map[x][y] <= structured_gen_values.y and tile.terrain_type == TerrainType.STABLE:
-				tile.terrain_type = TerrainType.STRUCTURED
+			var tile := Tile.new(tile_pos, t_type)
+			map_data[tile_pos] = tile
 
-			if structured_map[x][y] >= energetic_gen_values.x and structured_map[x][y] <= energetic_gen_values.y and tile.terrain_type == TerrainType.STABLE:
-				tile.terrain_type = TerrainType.ENERGETIC
+			# Record walkables on the fly
+			if t_type in [TerrainType.STABLE, TerrainType.RAW, TerrainType.ENERGETIC]:
+				walkable_positions.append(tile_pos)
 
-			if prime_map[x][y] >= prime_gen_values.x and prime_map[x][y] <= prime_gen_values.y and tile.terrain_type == TerrainType.STABLE:
-				tile.terrain_type = TerrainType.PRIME
-
-			# Set the tile in the base layer using the corresponding terrain texture
-			base_layer.set_cell(Vector2i(x, y), 0, terrain_textures[tile.terrain_type])
+			# Draw
+			base_layer.set_cell(tile_pos, 0, terrain_textures[tile.terrain_type])
 
 
 

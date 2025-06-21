@@ -8,11 +8,15 @@ extends Node
 @export var ale_definition : ALEdefinition   # baseline .tres
 
 
+signal ale_spawned(id:int, archetype:String, pos:Vector2i)
+signal ale_respawned(id:int, archetype:String, pos:Vector2i)
+
 const ARCHETYPE_BEHAVIORS :Dictionary[String, ALEBehavior]= {
 	"Scout": preload("res://assets/resources/behaviors/scout_bhv.tres"),
 	# …
 }
 #const InitConfig = preload("res://scripts/config/init_config.gd")
+
 
 var rng := RandomNumberGenerator.new()
 
@@ -78,6 +82,15 @@ func _create_definition_for_spawn(base : ALEdefinition) -> ALEdefinition:
 	def_copy.max_speed  = main.max_speed
 	return def_copy
 
+func _attach_behavior(ale: ALE) -> void:
+	var arch := ale.assigned_archetype            # set during ale.initialize()
+	var beh  : ALEBehavior = ARCHETYPE_BEHAVIORS.get(arch)
+	if beh:
+		ale.behavior = beh
+		beh.on_init(ale)
+
+
+
 # ───────────────────────────────── SPAWNING
 func spawn_ales() -> void:
 	if map.walkable_positions.is_empty():
@@ -100,6 +113,9 @@ func spawn_ales() -> void:
 		ale.ale_id = spawned
 		add_child(ale)
 
+		# send signal to TrailManager
+		ale.connect("trail_dropped", Callable(map.trail_manager, "_on_trail_dropped"))
+
 		var def_instance  := _create_definition_for_spawn(ale_definition)
 		var seed_symbol   := SEALSymbol.create_random(3)  # 3×3 starter
 
@@ -117,13 +133,16 @@ func spawn_ales() -> void:
 			enable_collision_handling,
 			seed_symbol
 		)
-		# ─── NEW: attach behaviour **after** initialize so archetype is known ───
-		var arch := ale.assigned_archetype           # set inside ale.initialize()
-		var beh: ALEBehavior= ARCHETYPE_BEHAVIORS.get(arch)
-		if beh:
-			ale.behavior = beh                      # export var in ale.gd
-			beh.on_init(ale)                        # prime per-agent counters
 
+		## ─── NEW: attach behaviour **after** initialize so archetype is known ───
+		#var arch := ale.assigned_archetype           # set inside ale.initialize()
+		#var beh: ALEBehavior= ARCHETYPE_BEHAVIORS.get(arch)
+		#if beh:
+			#ale.behavior = beh                      # export var in ale.gd
+			#beh.on_init(ale)                        # prime per-agent counters
+		# Attach behaviour and notify listeners
+		_attach_behavior(ale)
+		emit_signal("ale_spawned", ale.ale_id, ale.assigned_archetype, grid_pos)
 
 
 		ales[ale.name]      = ale
@@ -157,6 +176,8 @@ func respawn_ale(old_ale : ALE) -> void:
 	ale.ale_id = id_cache
 	add_child(ale)
 
+	ale.connect("trail_dropped", Callable(map.trail_manager, "_on_trail_dropped"))
+
 	var def_instance  := _create_definition_for_spawn(ale_definition)
 	var seed_symbol   := SEALSymbol.create_random(3)
 
@@ -174,6 +195,10 @@ func respawn_ale(old_ale : ALE) -> void:
 		enable_collision_handling,
 		seed_symbol
 	)
+
+	# Attach behaviour and notify listeners
+	_attach_behavior(ale)
+	emit_signal("ale_respawned", ale.ale_id, ale.assigned_archetype, spawn_grid_pos)
 
 	ales[ale.name]           = ale
 	occupancy[spawn_grid_pos] = ale

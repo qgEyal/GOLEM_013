@@ -9,6 +9,12 @@ Artificial Life Simulator using Semiotic Emergent ALife Language protocols
 '''
 const GOLEM_VERSION : String = "0.2.5.2 – Archetypes"
 
+# ───────── Signals ─────────
+signal turn_started(turn : int)                 # emitted once per sim tick
+signal simulation_paused(is_paused : bool)      # true = paused, false = resumed
+signal grid_visibility_changed(visible : bool)  # grid overlay toggle
+signal reset_requested(params : Dictionary)     # soft reset with current params
+
 ## SUB‑VIEWPORT
 @onready var sub_viewport : SubViewport = $".."
 
@@ -96,6 +102,8 @@ func _ready() -> void:
 	simulation_active = false
 
 	if stats_panel:
+		connect("simulation_paused", Callable(stats_panel, "_on_simulation_paused"))
+		connect("turn_started", Callable(stats_panel, "_on_turn_started"))
 		stats_panel.update_stat(
 			"G.O.L.E.M. Framework\nVERSION",
 			GOLEM_VERSION,
@@ -119,7 +127,7 @@ func _process(delta : float) -> void:
 		## added this two lines for testing
 		time_accumulator -= 1.0
 		turn_counter += 1
-
+		emit_signal("turn_started", turn_counter)
 		current_turn += 1
 
 		if max_turns > 0 and current_turn >= max_turns:
@@ -198,6 +206,7 @@ func _input(event) -> void:
 		#print("Simulation Speed:", simulation_speed)
 	elif event.is_action_pressed("reset"):
 		MessageLog.send_message("+-- RESET SIMULATION --+", GameColors.TEXT_NOTICE)
+		emit_signal("reset_requested", SessionManager.params)
 		#await get_tree().process_frame
 		#get_tree().reload_current_scene()
 		if SessionManager.params.size() > 0:
@@ -221,7 +230,10 @@ func _input(event) -> void:
 func toggle_grid_visibility() -> void:
 	grid_visible = !grid_visible
 	grid_vis.visible = grid_visible
+	emit_signal("grid_visibility_changed", grid_visible)
 
 func pause_game() -> void:
-	pause_label.visible = true
+	var now_paused := not get_tree().paused
 	get_tree().paused = true
+	pause_label.visible = true
+	emit_signal("simulation_paused", now_paused)

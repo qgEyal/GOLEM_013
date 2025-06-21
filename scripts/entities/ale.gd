@@ -1,5 +1,6 @@
 class_name ALE
 extends Node2D
+signal trail_dropped(pos: Vector2i, color: Color, duration: float, fade: float)
 
 const DIRECTIONS : Array[Vector2i] = [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]
 const PHASE_TEMPLATE : PackedStringArray = ["INIT", "SENSE", "PROC", "MEM", "COMM", "MOVE", "EVOLVE"]
@@ -414,4 +415,8 @@ func leave_trail(prev_pos : Vector2i) -> void:
 
 	var adjusted := trail_color
 	adjusted.a = 1.0
-	map.trail_manager.add_trail(prev_pos, adjusted,	main.trail_duration, main.trail_fade)
+
+	# Notify the rest of the system (e.g., TrailManager, minimap) via signal
+	emit_signal("trail_dropped", prev_pos, adjusted, main.trail_duration, main.trail_fade)
+
+	#map.trail_manager.add_trail(prev_pos, adjusted,	main.trail_duration, main.trail_fade)
