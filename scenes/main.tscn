@@ -76,8 +76,8 @@ render_target_update_mode = 4
 
 [node name="Main" type="Node2D" parent="InterfaceRoot/MainHContainer/MainVContainer/SubViewportContainer/SubViewport"]
 script = ExtResource("1_ye3fh")
-world_width = 30
-world_height = 20
+world_width = 100
+world_height = 80
 ale_count = 3
 ale_color = Color(0.209178, 0.308133, 0.974444, 1)
 trail_color = Color(0.337546, 0.675264, 0.527272, 1)
@@ -85,6 +85,10 @@ trail_duration = 3.0
 trail_fade = 0.75
 
 [node name="Map" parent="InterfaceRoot/MainHContainer/MainVContainer/SubViewportContainer/SubViewport/Main" instance=ExtResource("2_v6vlg")]
+void_scale = 1.32
+frag_scale = 1.91
+raw_scale = 3.04
+noise_scale = 0.042
 
 [node name="NavCam" type="Camera2D" parent="InterfaceRoot/MainHContainer/MainVContainer/SubViewportContainer/SubViewport/Main"]
 script = ExtResource("4_be4v0")
