@@ -9,7 +9,7 @@ const PHASE_TEMPLATE : PackedStringArray = ["INIT", "SENSE", "PROC", "MEM", "COM
 #@onready var _fallback_definition : ALEdefinition = preload("res://assets/resources/ale_definition.tres")
 
 ## set ALE behavior
-@export var behavior : ALEBehavior # set by ALEManager at spawn
+#@export var behavior : ALEBehavior # set by ALEManager at spawn
 @export var seal_symbol : SEALSymbol
 
 @export var definition : ALEdefinition : set = set_definition   # injected by manager
@@ -18,6 +18,8 @@ const PHASE_TEMPLATE : PackedStringArray = ["INIT", "SENSE", "PROC", "MEM", "COM
 
 var assigned_team      : String
 var assigned_archetype : String
+
+var profile: ALEProfile
 
 
 
@@ -70,7 +72,8 @@ var enable_collision_handling : bool
 
 var ale_id : int = -1
 
-var last_sensed_terrain : int = -1      # used by behaviour
+var last_sensed_terrain : int = -1 ## not currently used
+var last_sensed_density : float = -1.0
 var trail_turns_left    : int = 0
 
 var trail_enabled: bool
@@ -276,6 +279,8 @@ func move_randomly() -> void:
 
 			if enable_visited_cells:
 				visited_cells[grid_pos] = true
+
+			## SECTION TO ENABLE/DISABLE TRAILS BASED ON ARCHETYPES
 			if enable_trails:
 				leave_trail(last_pos)
 			return
@@ -367,16 +372,17 @@ func _handle_init() -> void:
 	assigned_team      = init_data["team"]
 	assigned_archetype = init_data["archetype"]
 	assigned_command   = init_data["command"]
-	seal_symbol = InitConfig.get_init_symbol(assigned_archetype)
+	#seal_symbol = InitConfig.get_init_symbol(assigned_archetype)
 
-	## plug behavior
-	if behavior:
-		behavior.on_init(self)
+	## plug profile
+	if profile:
+		profile.on_init(self)
 
 	# Debug
 	#definition.init_symbol = InitConfig.get_init_symbol(assigned_archetype)
-	print("ALE %d → Team %s, Archetype %s, Command %s, Symbol %s"
-		  % [ale_id, assigned_team, assigned_archetype, assigned_command, seal_symbol])
+	#########
+	#print("ALE %d → Team %s, Archetype %s, Command %s, Symbol %s"
+		  #% [ale_id, assigned_team, assigned_archetype, assigned_command, seal_symbol])
 
 	# ─── End role‑assignment ───
 
@@ -388,10 +394,11 @@ func _handle_init() -> void:
 func _handle_sense() -> void:
 	# 1. Read the terrain ID of the tile the ALE is on
 	terrain_id = map.map_data[grid_pos].terrain_type # get terrain id number
+	var density: float = map.get_density(grid_pos) # get terrain density as set in map.gd
 
 	# 2. Forward to the behaviour (if any) so it can decide
-	if behavior:
-		behavior.on_sense(self, terrain_id)
+	if profile:
+		profile.on_sense(self, terrain_id, density)
 
 	# 3. (Optional) — add any future perception logic here
 	#

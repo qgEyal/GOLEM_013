@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ALEProfile" load_steps=3 format=3 uid="uid://bjm2apexwifga"]
+
+[ext_resource type="Script" uid="uid://dhf0ju3fv8mxj" path="res://scripts/resources/ale_profile.gd" id="1_t0wg3"]
+[ext_resource type="Resource" uid="uid://bj8yel8ufxfrh" path="res://assets/resources/symbols/scout_symbol.tres" id="2_455ru"]
+
+[resource]
+script = ExtResource("1_t0wg3")
+sprite_size = Vector2(16, 16)
+seal_symbol = ExtResource("2_455ru")
+core_pipeline = PackedStringArray("INIT", "SENSE", "PROC", "MEM", "COMM", "MOVE", "EVOLVE")
+trails_enabled = false
+trail_turns = 0
+trail_duration = 2.0
+trail_fade_exp = 0.5
+trail_base_color = Color(0.9, 0.2, 0.7, 1)
+randomize_trail_color_on_sense = true
+metadata/_custom_type_script = "uid://dhf0ju3fv8mxj"

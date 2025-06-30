@@ -73,6 +73,17 @@ const TERRAIN_TYPE_NAMES : Dictionary = {
 	TerrainType.SINGULARITY:  "SINGULARITY"
 }
 
+const TERRAIN_DENSITY: Dictionary = {
+	TerrainType.VOID:         0.0,
+	TerrainType.FRAGMENTED:   0.2,
+	TerrainType.RAW:          0.4,
+	TerrainType.STABLE:       0.55,
+	TerrainType.STRUCTURED:   0.7,
+	TerrainType.ENERGETIC:    0.85,
+	TerrainType.PRIME:        0.95,
+	TerrainType.SINGULARITY:  1.0,
+}
+
 func get_terrain_name(t: int) -> String:
 	return TERRAIN_TYPE_NAMES.get(t, "UNKNOWN")
 
@@ -225,8 +236,9 @@ func generate_terrain() -> void:
 			var tile := Tile.new(tile_pos, t_type)
 			map_data[tile_pos] = tile
 
-			# Record walkables on the fly
-			if t_type in [TerrainType.STABLE, TerrainType.RAW, TerrainType.ENERGETIC]:
+			## WALKABLE TILES
+			#if t_type in [TerrainType.STABLE, TerrainType.RAW, TerrainType.ENERGETIC]:
+			if t_type in [TerrainType.STABLE]:
 				walkable_positions.append(tile_pos)
 
 			# Draw
@@ -251,12 +263,23 @@ func is_tile_walkable(tile_coords: Vector2i) -> bool:
 		return false  # Tile doesn't exist
 ###------------------------ WALKABLE TERRAIN --------------------------------------------------------------
 	var terrain = map_data[tile_coords].terrain_type  # Extract terrain type from map_data
-	return terrain in [TerrainType.STABLE, TerrainType.RAW, TerrainType.STRUCTURED ,TerrainType.ENERGETIC]  # Example walkable terrains
+	#return terrain in [TerrainType.STABLE, TerrainType.RAW, TerrainType.STRUCTURED ,TerrainType.ENERGETIC]  # Example walkable terrains
+	return terrain in [TerrainType.RAW, TerrainType.STABLE, TerrainType.STRUCTURED]
 
 """
+###############################################################
 Terrain Zones
 Functionality found in ale.gd
+###############################################################
 """
+
+# Returns the scalar density (0 - 1) at a given grid-position.
+func get_density(coords: Vector2i) -> float:
+	if not map_data.has(coords):
+		return 0.0 # treat “off-map” as non-terrain
+	var terrain := map_data[coords].terrain_type
+	return TERRAIN_DENSITY.get(terrain, 0.0)
+
 func is_high_energy_zone(grid_pos: Vector2i) -> bool:
 	"""
 	Returns true if the tile is classified as a high-energy zone.
@@ -333,13 +356,15 @@ func toggle_terrain(from_type: int, to_type: int):
 TRAILS
 """
 
-func add_trail(grid_pos: Vector2i, ale: ALE):
-	"""
-	Sends a request to TrailManager to draw a trail.
-	"""
-	if not is_in_bounds(grid_pos):
-		return
-
-	var trail_color = ale.trail_color  # Use ALE's color
-	print("creating trails")
-	trail_manager.add_trail(grid_pos, trail_color,main.trail_duration, main.trail_fade)  # Add trail with a 5-second duration
+#func add_trail(grid_pos: Vector2i, ale: ALE):
+	#"""
+	#Sends a request to TrailManager to draw a trail.
+	#"""
+	#if not is_in_bounds(grid_pos):
+		#return
+#
+	#var trail_color = ale.trail_color  # Use ALE's color
+	#print("creating trails")
+	#trail_manager.add_trail(grid_pos, trail_color,main.trail_duration, main.trail_fade)  # Add trail with a 5-second duration
+	#print("tile size in map.gd add_trail func ", tile_size)
+	#trail_manager.set_tile_size(tile_size)

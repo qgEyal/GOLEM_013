@@ -35,7 +35,7 @@ prefix = "Map Height"
 
 [node name="ALECount" type="SpinBox" parent="Panel/VBoxContainer"]
 layout_mode = 2
-min_value = 2.0
+min_value = 1.0
 value = 20.0
 allow_greater = true
 prefix = "ALE Count"

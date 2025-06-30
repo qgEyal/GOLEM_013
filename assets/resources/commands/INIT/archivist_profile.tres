@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ALEProfile" load_steps=3 format=3 uid="uid://djfh3pge2dmwi"]
+
+[ext_resource type="Script" uid="uid://dhf0ju3fv8mxj" path="res://scripts/resources/ale_profile.gd" id="1_rb87i"]
+[ext_resource type="Resource" uid="uid://ci0rsks4n2gyx" path="res://assets/resources/symbols/archivist_symbol.tres" id="2_wl53e"]
+
+[resource]
+script = ExtResource("1_rb87i")
+sprite_size = Vector2(16, 16)
+seal_symbol = ExtResource("2_wl53e")
+core_pipeline = PackedStringArray("INIT", "SENSE", "PROC", "MEM", "COMM", "MOVE", "EVOLVE")
+trails_enabled = false
+trail_turns = 7
+trail_duration = 2.0
+trail_fade_exp = 0.5
+trail_base_color = Color(0.9, 0.2, 0.7, 1)
+randomize_trail_color_on_sense = false
+metadata/_custom_type_script = "uid://dhf0ju3fv8mxj"

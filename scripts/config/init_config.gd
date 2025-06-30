@@ -35,14 +35,14 @@ const ARCHETYPE_COMMAND_BIAS: Dictionary = {
 }
 
 const INIT_SYMBOLS: Dictionary = {
-	"Scout":      preload("res://assets/resources/commands/INIT/scout.tres"),
-	"Explorer":   preload("res://assets/resources/commands/INIT/explorer.tres"),
-	"Archivist":  preload("res://assets/resources/commands/INIT/archivist.tres"),
-	"Scribe":     preload("res://assets/resources/commands/INIT/scribe.tres"),
-	"Courier":    preload("res://assets/resources/commands/INIT/courier.tres"),
-	"Glyphweaver":preload("res://assets/resources/commands/INIT/glyphweaver.tres"),
-	"Sentinel":   preload("res://assets/resources/commands/INIT/sentinel.tres"),
-	"Alchemist":  preload("res://assets/resources/commands/INIT/alchemist.tres"),
+	"Scout":      preload("res://assets/resources/symbols/scout_symbol.tres"),
+	"Explorer":   preload("res://assets/resources/symbols/explorer_symbol.tres"),
+	"Archivist":  preload("res://assets/resources/symbols/archivist_symbol.tres"),
+	"Scribe":     preload("res://assets/resources/symbols/scribe_symbol.tres"),
+	"Courier":    preload("res://assets/resources/symbols/courier_symbol.tres"),
+	"Glyphweaver":preload("res://assets/resources/symbols/glyphweaver_symbol.tres"),
+	"Sentinel":   preload("res://assets/resources/symbols/sentinel_symbol.tres"),
+	"Alchemist":  preload("res://assets/resources/symbols/alchemist_symbol.tres"),
 }
 
 
@@ -78,6 +78,7 @@ static func choose_team() -> String:
 	return TEAMS[0]  # fallback
 
 # ─── Choose an archetype within a given team ───
+'''
 static func choose_archetype(team: String) -> String:
 	_seed_rng()
 	var weights: Dictionary = {}
@@ -94,6 +95,40 @@ static func choose_archetype(team: String) -> String:
 		if threshold <= cumulative:
 			return arche
 	return arch_dict.keys()[0]  # fallback
+'''
+static func choose_archetype(team: String) -> String:
+	_seed_rng()
+
+	# Limit candidates to those that actually have an ALEProfile
+	var known : PackedStringArray = ALEManager.get_known_archetypes()
+	var arch_dict : Dictionary = ARCHETYPE_ALPHA[team]
+	var candidates : PackedStringArray = []
+	for arche in arch_dict.keys():
+		if known.has(arche):
+			candidates.append(arche)
+
+	# Safety: if nothing matched, fall back to Scout
+	if candidates.is_empty():
+		candidates.append("Scout")
+
+	# Dirichlet-style draw over the filtered list
+	var weights : Dictionary = {}
+	var total   : float = 0.0
+	for arche in candidates:
+		var g : float = -log(_rng.randf())    # Gamma(1,1)
+		weights[arche] = g
+		total += g
+
+	var threshold  : float = _rng.randf() * total
+	var cumulative : float = 0.0
+	for arche in candidates:
+		cumulative += weights[arche]
+		if threshold <= cumulative:
+			return arche
+
+	return candidates[0]  # extremely unlikely fallback
+
+
 
 # ─── Atomically assign team, archetype, and command bias ───
 static func assign_init_role() -> Dictionary:

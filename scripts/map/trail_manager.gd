@@ -1,9 +1,14 @@
 extends Node2D
 class_name TrailManager
+# Trails: ALE emits → ALEManager connects → TrailManager._on_trail_dropped → add_trail()
 
-var trails = {}  # Dictionary to store active trails {grid_pos: {time_left, color}}
+
+
+var trails: Dictionary = {}  # Dictionary to store active trails {grid_pos: {time_left, color}}
 @onready var map: Map
+@onready var main: Main
 #@onready var ale_definition: ALEdefinition = preload("res://assets/resources/ale_definition.tres")
+var tile_size: int = 16 # grab from Map.initialize()
 
 var trail_color: Color
 func _ready():
@@ -36,9 +41,7 @@ func add_trail(grid_pos: Vector2i, color: Color, duration: float, fade_speed: fl
 
 	queue_redraw()  # Redraw when a new trail is added
 
-
-
-
+## LEAVE TRAILS ON GROUND
 func _process(delta):
 	"""
 	Updates and fades trails over time while ensuring ALEs are not affected.
@@ -83,11 +86,16 @@ func _on_trail_dropped(pos: Vector2i, color: Color, duration: float, fade: float
 	# Delegate straight to the existing helper
 	add_trail(pos, color, duration, fade)
 
+func set_tile_size(p_size : int) -> void:
+	tile_size = p_size
+	queue_redraw() # redraw with new scale
 
 func _draw():
 	"""
 	Draws trails with fading transparency, ensuring ALEs remain fully opaque.
 	"""
+ 	#**Draw only trails, preserving ALE visibility**
+
 	for grid_pos in trails.keys():
 		var data = trails[grid_pos]
 
@@ -101,7 +109,6 @@ func _draw():
 			var tile = map.map_data[grid_pos]
 			if tile:
 				continue  # Skip drawing a trail if an ALE is present
-
-		# **Draw only trails, preserving ALE visibility**
-		var world_pos = Grid.grid_to_world(grid_pos.x, grid_pos.y, 16)
+		#print("tile size in trail_manager.gd _draw() func ", tile_size)
+		var world_pos = Grid.grid_to_world(grid_pos.x, grid_pos.y, tile_size)
 		draw_rect(Rect2(world_pos, Vector2(16, 16)), trail_color, true)

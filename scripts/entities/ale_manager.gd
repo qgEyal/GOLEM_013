@@ -11,9 +11,17 @@ extends Node
 signal ale_spawned(id:int, archetype:String, pos:Vector2i)
 signal ale_respawned(id:int, archetype:String, pos:Vector2i)
 
-const ARCHETYPE_BEHAVIORS :Dictionary[String, ALEBehavior]= {
-	"Scout": preload("res://assets/resources/behaviors/scout_bhv.tres"),
-	# …
+#static var ARCHETYPE_PROFILES : Dictionary = _build_profile_dict()
+const ARCHETYPE_PROFILES :Dictionary = {
+	"Scout": preload("res://assets/resources/commands/INIT/scout_profile.tres"),
+	"Explorer": preload("res://assets/resources/commands/INIT/explorer_profile.tres"),
+	"Alchemist": preload("res://assets/resources/commands/INIT/alchemist_profile.tres"),
+	"Archivist": preload("res://assets/resources/commands/INIT/archivist_profile.tres"),
+	"Glyphweaver": preload("res://assets/resources/commands/INIT/glyphweaver_profile.tres"),
+	"Courier": preload("res://assets/resources/commands/INIT/courier_profile.tres"),
+	"Sentinel": preload("res://assets/resources/commands/INIT/sentinel_profile.tres"),
+	"Scribe": preload("res://assets/resources/commands/INIT/scribe_profile.tres")
+	 #…
 }
 #const InitConfig = preload("res://scripts/config/init_config.gd")
 
@@ -74,6 +82,36 @@ func get_ale_at(grid_pos : Vector2i) -> ALE:
 	return occupancy.get(grid_pos, null)
 
 # ───────────────────────────────── INTERNAL HELPERS
+
+#static func _build_profile_dict() -> Dictionary:
+	#var dict : Dictionary = {}
+	#var dir  := DirAccess.open("res://assets/resources/commands/INIT/")
+	#if dir == null:
+		#push_error("ALEManager: profiles folder not found")
+		#return dict
+#
+	#for file_name in dir.get_files():
+		#if not file_name.ends_with("_profile.tres"):
+			#continue                          # skip unrelated files
+#
+		#var res_path := "res://profiles/%s" % file_name
+		#var res      := load(res_path)
+#
+		#if res is ALEProfile:
+			## Key becomes capitalised stem:  "scout_profile" → "Scout"
+			#var key := file_name.get_basename().replace("_profile", "").capitalize()
+			#dict[key] = res
+		#else:
+			#push_warning("%s is not an ALEProfile" % res_path)
+#
+	#return dict
+
+# Utility for InitConfig
+static func get_known_archetypes() -> PackedStringArray:
+	return ARCHETYPE_PROFILES.keys()
+
+
+
 func _create_definition_for_spawn(base : ALEdefinition) -> ALEdefinition:
 	var def_copy := base.duplicate(false) as ALEdefinition
 	# Inject baseline values from Main (hybrid pattern)
@@ -82,17 +120,17 @@ func _create_definition_for_spawn(base : ALEdefinition) -> ALEdefinition:
 	def_copy.max_speed  = main.max_speed
 	return def_copy
 
-func _attach_behavior(ale: ALE) -> void:
-	var arch := ale.assigned_archetype            # set during ale.initialize()
-	var beh  : ALEBehavior = ARCHETYPE_BEHAVIORS.get(arch)
-	if beh:
-		ale.behavior = beh
-		beh.on_init(ale)
-
-
 
 # ───────────────────────────────── SPAWNING
 func spawn_ales() -> void:
+	# 1. Repair any ALE that is no longer on a walkable cell
+	#    (iterate over a copy because respawn_ale() mutates `ales`)
+	for ale in Array(ales.values()):
+		if not is_instance_valid(ale):      # skip anything already freed
+			continue
+		if not map.walkable_positions.has(ale.grid_pos):
+			respawn_ale(ale)      # passes the required argument
+
 	if map.walkable_positions.is_empty():
 		push_error("ALEManager.spawn_ales(): no walkable positions")
 		return
@@ -141,13 +179,22 @@ func spawn_ales() -> void:
 			#ale.behavior = beh                      # export var in ale.gd
 			#beh.on_init(ale)                        # prime per-agent counters
 		# Attach behaviour and notify listeners
-		_attach_behavior(ale)
+		_apply_profile(ale)
 		emit_signal("ale_spawned", ale.ale_id, ale.assigned_archetype, grid_pos)
 
 
 		ales[ale.name]      = ale
 		occupancy[grid_pos] = ale
 		spawned += 1
+
+## ─────────────────────────── MASS RESPAWN
+## Call this when you need to respawn *every* current ALE.
+## It makes a copy first so we can mutate the `ales` dictionary safely.
+#func respawn_ales() -> void:
+	#var to_respawn : Array[ALE] = Array(ales.values())  # freeze the list
+	#for ale in to_respawn:
+		#respawn_ale(ale)  # <- here we satisfy the old_ale : ALE parameter
+
 
 # Respawn logic identical but now calls _create_definition_for_spawn()
 func respawn_ale(old_ale : ALE) -> void:
@@ -197,7 +244,7 @@ func respawn_ale(old_ale : ALE) -> void:
 	)
 
 	# Attach behaviour and notify listeners
-	_attach_behavior(ale)
+	_apply_profile(ale)
 	emit_signal("ale_respawned", ale.ale_id, ale.assigned_archetype, spawn_grid_pos)
 
 	ales[ale.name]           = ale
@@ -206,3 +253,21 @@ func respawn_ale(old_ale : ALE) -> void:
 func clear_ales() -> void:
 	for ale in get_children():
 		ale.queue_free()
+	ales.clear()         # ← NEW: purge dead references
+	occupancy.clear()    # ← NEW: keep the grid map in sync
+
+func _apply_profile(ale: ALE) -> void:
+	print("applying profile for archetype:", ale.assigned_archetype)
+	var profile = ARCHETYPE_PROFILES.get(ale.assigned_archetype) as ALEProfile
+	if profile == null:
+		# Fallback and use the Scout profile
+		profile = ARCHETYPE_PROFILES.get("Scout") as ALEProfile
+		push_warning("Archetype %s missing; using Scout instead" % ale.assigned_archetype)
+
+	ale.profile = profile # non-null guaranteed
+	profile.on_init(ale)
+	#if profile:
+		#ale.profile = profile
+		#profile.on_init(ale)
+	#else:
+		#push_error("No ALEProfile found for archetype %s" % ale.assigned_archetype)
