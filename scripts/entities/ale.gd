@@ -60,7 +60,7 @@ var _last_turn_seen: int = -1 # cache to detect new turns
 #var stop_timer   : float  = 0.0
 #var stop_turns : int
 
-var visited_cells : Dictionary = {}
+
 var body_color    : Color
 var trail_color   : Color
 var default_color : Color
@@ -75,7 +75,8 @@ var ale_id : int = -1
 var last_sensed_terrain : int = -1 ## not currently used
 var last_sensed_density : float = -1.0
 var trail_turns_left    : int = 0
-
+var visited_cells : Dictionary = {}
+var frontier_scores : Dictionary = {}
 var trail_enabled: bool
 
 
@@ -278,7 +279,8 @@ func move_randomly() -> void:
 					 + Vector2(tile_size / 2.0, tile_size / 2.0)
 
 			if enable_visited_cells:
-				visited_cells[grid_pos] = true
+				#visited_cells[grid_pos] = true
+				visited_cells[grid_pos] = visited_cells.get(grid_pos, 0) + 1
 
 			## SECTION TO ENABLE/DISABLE TRAILS BASED ON ARCHETYPES
 			if enable_trails:
@@ -393,7 +395,7 @@ func _handle_init() -> void:
 # Called once per update while phase == SENSE
 func _handle_sense() -> void:
 	# 1. Read the terrain ID of the tile the ALE is on
-	terrain_id = map.map_data[grid_pos].terrain_type # get terrain id number
+	terrain_id = map.map_data[grid_pos].terrain_type ## get terrain id number   ---> do I need to add var?
 	var density: float = map.get_density(grid_pos) # get terrain density as set in map.gd
 
 	# 2. Forward to the behaviour (if any) so it can decide
@@ -425,5 +427,5 @@ func leave_trail(prev_pos : Vector2i) -> void:
 
 	# Notify the rest of the system (e.g., TrailManager, minimap) via signal
 	emit_signal("trail_dropped", prev_pos, adjusted, main.trail_duration, main.trail_fade)
-
+	print("[TRACE] ALE ", ale_id," dropped trail at ", prev_pos, " color", adjusted.to_html())
 	#map.trail_manager.add_trail(prev_pos, adjusted,	main.trail_duration, main.trail_fade)

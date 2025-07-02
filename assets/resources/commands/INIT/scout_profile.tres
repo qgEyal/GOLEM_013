@@ -1,14 +1,20 @@
-[gd_resource type="Resource" script_class="ALEProfile" load_steps=3 format=3 uid="uid://bjm2apexwifga"]
+[gd_resource type="Resource" script_class="ALEProfile" load_steps=5 format=3 uid="uid://bjm2apexwifga"]
 
 [ext_resource type="Script" uid="uid://dhf0ju3fv8mxj" path="res://scripts/resources/ale_profile.gd" id="1_t0wg3"]
 [ext_resource type="Resource" uid="uid://bj8yel8ufxfrh" path="res://assets/resources/symbols/scout_symbol.tres" id="2_455ru"]
+[ext_resource type="Script" uid="uid://cg52tl8q5t6w6" path="res://assets/resources/commands/SENSE/scout_sense_module.gd" id="3_i7mnq"]
+
+[sub_resource type="Resource" id="Resource_qhvlj"]
+script = ExtResource("3_i7mnq")
+metadata/_custom_type_script = "uid://cg52tl8q5t6w6"
 
 [resource]
 script = ExtResource("1_t0wg3")
 sprite_size = Vector2(16, 16)
 seal_symbol = ExtResource("2_455ru")
+sense_module = SubResource("Resource_qhvlj")
 core_pipeline = PackedStringArray("INIT", "SENSE", "PROC", "MEM", "COMM", "MOVE", "EVOLVE")
-trails_enabled = false
+trails_enabled = true
 trail_turns = 0
 trail_duration = 2.0
 trail_fade_exp = 0.5

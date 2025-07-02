@@ -62,7 +62,7 @@ var turn_counter: int = 0
 @export var ENABLE_COLLISION_HANDLING : bool = true
 
 # Pre‑loaded base definition resource (duplicated & mutated by ALEManager)
-var ale_definition : ALEdefinition = preload("res://assets/resources/ale_definition.tres")
+#var ale_definition : ALEdefinition = preload("res://assets/resources/ale_definition.tres")
 
 # Turn & timing
 var time_accumulator : float = 0.0

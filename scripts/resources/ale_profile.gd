@@ -15,7 +15,8 @@ class_name ALEProfile
 #@export var body_color   : Color    = Color.WHITE
 
 # ─── Symbolic seed ─────────────────────────────────────────────────────────
-@export var seal_symbol  : SEALSymbol    # picked during authoring or randomised
+@export var seal_symbol  : SEALSymbol   # add Seal Symbol resourced
+@export var sense_module: SenseModule
 @export var core_pipeline : PackedStringArray = [
 	"INIT", "SENSE", "PROC", "MEM", "COMM", "MOVE", "EVOLVE"
 ]
@@ -64,23 +65,26 @@ func on_sense(agent: ALE, terrain_id: int, density: float) -> void:
 		return
 
 	agent.last_sensed_terrain = terrain_id
-	agent.enable_trails       = true
-	agent.trail_turns_left    = trail_turns
+	if trails_enabled:
+		agent.enable_trails       = true
+		agent.trail_turns_left    = trail_turns
 
 
 	if randomize_trail_color_on_sense:
 		if density < 0.65:
-			print("No trail")
+			MessageLog.send_message(str("ALE %d trail OFF" %agent.ale_id), GameColors.TEXT_UPDATE)
+			#print("No trail")
 			agent.enable_trails = false          # “thin” zones → stay stealthy
 			trail_duration = 0.0
 		elif density >= 0.7:
-			print("Leaving trail")
+			#print("Leaving trail")
+			MessageLog.send_message(str("ALE %d trail ON" %agent.ale_id), GameColors.TEXT_UPDATE)
 			trail_duration = 1.0
-			agent.trail_color = Color.from_hsv(_rng.randf(),_rng.randf(),_rng.randf()) # bright mark in high-energy hubs
-		# Palette keyed to mirror rule, saturation/value vary per sense event
-		#var h := float(seal_symbol.mirror_type) / 7.0 # number of core commands
-		#print("seal mirror type ", seal_symbol.mirror_type)
-		#agent.trail_color = Color.from_hsv(h, _rng.randf_range(0.7, 1.0),1.0)
+			agent.trail_color = Color.from_hsv(_rng.randf(),_rng.randf(),_rng.randf())
+
+	# ── delegate to archetype-specific logic if a module is plugged-in ────
+	if sense_module and sense_module.has_method("on_sense"):
+		sense_module.on_sense(agent, terrain_id, density)
 
 
 func on_move(agent: ALE) -> void:

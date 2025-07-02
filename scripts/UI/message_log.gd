@@ -12,7 +12,7 @@ func _ready() -> void:
 static func send_message(text: String, color: Color) -> void:
 	SignalBus.message_sent.emit(text, color)
 
-
+## Look into modifying this better rather than the (Xn) message
 func add_message(text:String, color: Color) -> void:
 	# check if message exists. If it's identical to last message, increase count by 1
 	# otherwise create a new message

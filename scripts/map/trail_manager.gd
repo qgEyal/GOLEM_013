@@ -4,7 +4,7 @@ class_name TrailManager
 
 
 
-var trails: Dictionary = {}  # Dictionary to store active trails {grid_pos: {time_left, color}}
+var trails: Dictionary = {}  # Dictionary to store active trails {grid_pos: {time_left, color, fasde speed}}
 @onready var map: Map
 @onready var main: Main
 #@onready var ale_definition: ALEdefinition = preload("res://assets/resources/ale_definition.tres")
@@ -28,9 +28,6 @@ func add_trail(grid_pos: Vector2i, color: Color, duration: float, fade_speed: fl
 	trail_color = color
 	#if not trail_color:
 		#trail_color = ale_definition.trail_color
-
-
-
 	trail_color.a = 1.0  # Keep color fully opaque when applied
 
 	trails[grid_pos] = {
@@ -83,8 +80,11 @@ func clear_trails() -> void:
 	trails.clear()
 
 func _on_trail_dropped(pos: Vector2i, color: Color, duration: float, fade: float) -> void:
+	print("[TRACE] TrailManager received trail at ", pos," dur:", duration, " fade:", fade)
+
 	# Delegate straight to the existing helper
 	add_trail(pos, color, duration, fade)
+
 
 func set_tile_size(p_size : int) -> void:
 	tile_size = p_size
